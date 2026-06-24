@@ -5,7 +5,6 @@ import { formatBRL, calcNationalization } from "@/lib/calculations";
 import Link from "next/link";
 import { ArrowLeft, Package, FileText, Clock } from "lucide-react";
 import { ContractSign } from "./ContractSign";
-import { InvestmentSettings } from "./InvestmentSettings";
 
 export default async function OperationDetailPage({
   params,
@@ -290,8 +289,6 @@ export default async function OperationDetailPage({
         )}
       </div>
 
-      {/* Seção Mobile de Configurações de Investimento */}
-      <InvestmentSettings operationId={operation.id} />
     </div>
   );
 }
