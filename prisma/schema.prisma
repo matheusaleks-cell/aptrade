@@ -1,0 +1,400 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      String   @default("INVESTOR") // ADMIN, INVESTOR
+  cpfCnpj   String?  @unique
+  phone     String?
+  rg        String?
+  address   String?
+  profession String?
+  bankName  String?
+  bankAgency String?
+  bankAccount String?
+  pixKey    String?
+  bankReferences  String?
+  commercialRefs  String?
+  avatarUrl       String?
+  approved  Boolean  @default(false)
+  suitabilityResult   String?
+  suitabilityFilledAt DateTime?
+  isQualifiedInvestor Boolean   @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  kycDocuments KycDocument[]
+  investments  Investment[]
+  documents    Document[]
+  assignedLeads Lead[]       @relation("AssignedLeads")
+  salesOrders   SalesOrder[] @relation("SellerOrders")
+  withdrawals   WithdrawalRequest[]
+  notifications Notification[]
+
+  @@map("users")
+}
+
+model KycDocument {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  docType    String
+  frontPath  String
+  backPath   String?
+  status     String   @default("PENDING")
+  reviewNote String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("kyc_documents")
+}
+
+model FundingProject {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?
+  productCategory String
+  maxCycles       Int      @default(1)
+  profitSplitPct  Float    @default(0.50)
+  payoutRule      String   @default("AT_SETTLEMENT")
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  operations FundingOperation[]
+  documents  Document[]
+
+  @@map("funding_projects")
+}
+
+model FundingOperation {
+  id               String   @id @default(cuid())
+  operationCode    String   @unique
+  projectId        String
+  project          FundingProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  totalAmount      Float
+  fundedAmount     Float    @default(0)
+  minInvestment    Float    @default(1000)
+  modality         String   @default("PROFIT_SHARE")
+  fixedRateMonthly Float?
+  expectedMonths   Int      @default(6)
+  status           String   @default("DRAFT")
+  openDate         DateTime?
+  closeDate        DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  investments    Investment[]
+  importCosts    ImportCostEntry[]
+  cycles         OperationCycle[]
+  importLots     ImportLot[]
+  documents      Document[]
+
+  @@map("funding_operations")
+}
+
+model ImportCostEntry {
+  id            String   @id @default(cuid())
+  operationId   String
+  operation     FundingOperation @relation(fields: [operationId], references: [id], onDelete: Cascade)
+  fobValue      Float
+  freight       Float
+  insurance     Float
+  quantity      Int
+  exchangeRate  Float
+  iiRate        Float    @default(0.18)
+  pisRate       Float    @default(0.021)
+  cofinsRate    Float    @default(0.0965)
+  icmsRate      Float    @default(0.18)
+  icmsFactor    Float    @default(0.82)
+  salesTaxRate  Float    @default(0.08)
+  opExRate      Float    @default(0.15)
+  siscomexFixed Float    @default(154.23)
+  customsOpCost Float    @default(0)
+  sellingPrice  Float?
+  isActual      Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("import_cost_entries")
+}
+
+model Investment {
+  id               String   @id @default(cuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  operationId      String
+  operation        FundingOperation @relation(fields: [operationId], references: [id], onDelete: Cascade)
+  amount           Float
+  status           String   @default("PENDING")
+  grossReturn      Float?
+  irAmount         Float?
+  netReturn        Float?
+  contractUrl      String?
+  contractSignedAt DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("investments")
+}
+
+model OperationCycle {
+  id            String   @id @default(cuid())
+  operationId   String
+  operation     FundingOperation @relation(fields: [operationId], references: [id], onDelete: Cascade)
+  cycleNumber   Int
+  quantity      Int      @default(0)
+  grossRevenue  Float    @default(0)
+  totalCost     Float    @default(0)
+  investorShare Float    @default(0)
+  companyShare  Float    @default(0)
+  carryover     Float    @default(0)
+  status        String   @default("PENDING")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  sales CycleSale[]
+
+  @@map("operation_cycles")
+}
+
+model CycleSale {
+  id          String   @id @default(cuid())
+  cycleId     String
+  cycle       OperationCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  buyerName   String
+  quantity    Int
+  unitPrice   Float
+  totalValue  Float
+  saleDate    DateTime
+  customerId  String?
+  customer    Customer? @relation(fields: [customerId], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@map("cycle_sales")
+}
+
+model SystemConfig {
+  id            String   @id @default(cuid())
+  iiRate        Float    @default(0.18)
+  pisRate       Float    @default(0.021)
+  cofinsRate    Float    @default(0.0965)
+  icmsRate      Float    @default(0.18)
+  salesTaxRate  Float    @default(0.08)
+  opExRate      Float    @default(0.15)
+  cvmLimit      Float    @default(20000)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("system_configs")
+}
+
+// ==================== NEW MODELS ====================
+
+model Supplier {
+  id           String   @id @default(cuid())
+  name         String
+  country      String
+  contactName  String?
+  contactEmail String?
+  contactPhone String?
+  bankDetails  String?
+  rating       Int      @default(5)
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  importLots ImportLot[]
+
+  @@map("suppliers")
+}
+
+model ImportLot {
+  id                    String   @id @default(cuid())
+  batchCode             String   @unique
+  operationId           String
+  operation             FundingOperation @relation(fields: [operationId], references: [id], onDelete: Cascade)
+  supplierId            String?
+  supplier              Supplier? @relation(fields: [supplierId], references: [id])
+  countryOrigin         String?
+  purchaseDate          DateTime?
+  expectedShipmentDate  DateTime?
+  expectedArrivalDate   DateTime?
+  currency              String   @default("USD")
+  exchangeRate          Float    @default(5.0)
+  fobValue              Float    @default(0)
+  freight               Float    @default(0)
+  insurance             Float    @default(0)
+  customsTaxes          Float    @default(0)
+  customsFees           Float    @default(0)
+  totalCostNationalized Float    @default(0)
+  quantityItems         Int      @default(0)
+  status                String   @default("PEDIDO_FEITO")
+  expectedMarginPct     Float?
+  realizedMarginPct     Float?
+  notes                 String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  documents Document[]
+
+  @@map("import_lots")
+}
+
+model Customer {
+  id                String   @id @default(cuid())
+  type              String   @default("B2B")
+  name              String
+  cpfCnpj           String?  @unique
+  email             String?
+  phone             String?
+  state             String?
+  city              String?
+  address           String?
+  cep               String?
+  category          String?
+  source            String?
+  notes             String?
+  fantasyName       String?
+  stateRegistration String?
+  responsibleName   String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  salesOrders SalesOrder[]
+  cycleSales  CycleSale[]
+  documents   Document[]
+
+  @@map("customers")
+}
+
+model SalesOrder {
+  id            String   @id @default(cuid())
+  orderNumber   String   @unique
+  customerId    String
+  customer      Customer @relation(fields: [customerId], references: [id])
+  sellerId      String?
+  seller        User?    @relation("SellerOrders", fields: [sellerId], references: [id])
+  products      String
+  totalValue    Float
+  status        String   @default("RASCUNHO")
+  paymentMethod String?
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("sales_orders")
+}
+
+model Document {
+  id            String   @id @default(cuid())
+  name          String
+  type          String   @default("PDF")
+  category      String   @default("Legal")
+  size          String?
+  base64Data    String
+  projectId     String?
+  project       FundingProject? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  operationId   String?
+  operation     FundingOperation? @relation(fields: [operationId], references: [id], onDelete: Cascade)
+  userId        String?
+  user          User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customerId    String?
+  customer      Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  lotId         String?
+  lot           ImportLot? @relation(fields: [lotId], references: [id], onDelete: Cascade)
+  realizedValue Float?
+  realizedDate  DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("documents")
+}
+
+model Lead {
+  id            String   @id @default(cuid())
+  name          String
+  email         String?
+  phone         String?
+  status        String   @default("NOVO")
+  priority      String   @default("MEDIA")
+  value         Float?
+  source        String?
+  interests     String?
+  taxId         String?
+  state         String?
+  customerType  String?
+  notes         String?
+  isArchived    Boolean  @default(false)
+  assignedToId  String?
+  assignedTo    User?    @relation("AssignedLeads", fields: [assignedToId], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  logs LeadLog[]
+
+  @@map("leads")
+}
+
+model LeadLog {
+  id        String   @id @default(cuid())
+  leadId    String
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  action    String
+  userName  String?
+  createdAt DateTime @default(now())
+
+  @@map("lead_logs")
+}
+
+model FinancialDistributionRule {
+  id                String   @id @default(cuid())
+  name              String   @default("Padrão")
+  reinvestmentPct   Float    @default(0)
+  investorPct       Float    @default(50)
+  companyPct        Float    @default(50)
+  reservePct        Float    @default(0)
+  operationalCost   Float    @default(15)
+  salesCommission   Float    @default(0)
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("financial_distribution_rules")
+}
+
+model WithdrawalRequest {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount    Float
+  pixKey    String
+  status    String   @default("PENDING")
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("withdrawal_requests")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      String   @default("INFO")
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@map("notifications")
+}
