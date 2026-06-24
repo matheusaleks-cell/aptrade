@@ -2,13 +2,24 @@
 // npm install --save-dev prisma dotenv
 import "dotenv/config";
 import { defineConfig } from "prisma/config";
+import { createClient } from "@libsql/client";
+import { PrismaLibSql } from "@prisma/adapter-libsql";
+
+const tursoUrl = process.env["TURSO_DATABASE_URL"];
+const tursoToken = process.env["TURSO_AUTH_TOKEN"];
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
   },
-  datasource: {
-    url: process.env["DATABASE_URL"],
-  },
+  datasource: tursoUrl && tursoToken
+    ? {
+        adapter: new PrismaLibSql(
+          createClient({ url: tursoUrl, authToken: tursoToken })
+        ),
+      }
+    : {
+        url: process.env["DATABASE_URL"],
+      },
 });
