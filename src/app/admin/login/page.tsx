@@ -14,14 +14,20 @@ export default function AdminLoginPage() {
     setLoading(true);
     setError("");
 
-    const formData = new FormData(e.currentTarget);
+    try {
+      const formData = new FormData(e.currentTarget);
 
-    // Delay artificial de 1.2s para garantir a exibição da tela de carregamento estilo aplicativo
-    await new Promise((resolve) => setTimeout(resolve, 1200));
+      // Delay artificial de 1.2s para garantir a exibição da tela de carregamento estilo aplicativo
+      await new Promise((resolve) => setTimeout(resolve, 1200));
 
-    const result = await loginAdmin(formData);
-    if (result?.error) {
-      setError(result.error);
+      const result = await loginAdmin(formData);
+      if (result?.error) {
+        setError(result.error);
+        setLoading(false);
+      }
+    } catch (err: any) {
+      console.error("Erro no login do admin:", err);
+      setError("Ocorreu um erro ao conectar ao servidor. Verifique sua conexão e tente novamente.");
       setLoading(false);
     }
   }

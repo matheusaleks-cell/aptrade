@@ -15,12 +15,18 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
 
-    const formData = new FormData(e.currentTarget);
-    await new Promise((resolve) => setTimeout(resolve, 1200));
+    try {
+      const formData = new FormData(e.currentTarget);
+      await new Promise((resolve) => setTimeout(resolve, 1200));
 
-    const result = await loginInvestor(formData);
-    if (result?.error) {
-      setError(result.error);
+      const result = await loginInvestor(formData);
+      if (result?.error) {
+        setError(result.error);
+        setLoading(false);
+      }
+    } catch (err: any) {
+      console.error("Erro no login do investidor:", err);
+      setError("Ocorreu um erro ao conectar ao servidor. Verifique sua conexão e tente novamente.");
       setLoading(false);
     }
   }
