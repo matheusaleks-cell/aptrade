@@ -1,6 +1,5 @@
 import { PrismaClient } from "@/generated/prisma/client";
 import { PrismaLibSql } from "@prisma/adapter-libsql";
-import { createClient } from "@libsql/client";
 
 const globalForPrisma = globalThis as unknown as { prisma: InstanceType<typeof PrismaClient> };
 
@@ -10,8 +9,7 @@ function createPrismaClient() {
 
   if (tursoUrl && tursoToken) {
     // Produção: usar Turso (libsql remoto)
-    const libsql = createClient({ url: tursoUrl, authToken: tursoToken });
-    const adapter = new PrismaLibSql(libsql);
+    const adapter = new PrismaLibSql({ url: tursoUrl, authToken: tursoToken });
     return new PrismaClient({ adapter });
   }
 
