@@ -1,4 +1,6 @@
 import { PrismaClient } from "@/generated/prisma/client";
+import { PrismaLibSql } from "@prisma/adapter-libsql";
+import { createClient } from "@libsql/client";
 
 const globalForPrisma = globalThis as unknown as { prisma: InstanceType<typeof PrismaClient> };
 
@@ -8,15 +10,15 @@ function createPrismaClient() {
 
   if (tursoUrl && tursoToken) {
     // Produção: usar Turso (libsql remoto)
-    const { createClient } = require("@libsql/client");
-    const { PrismaLibSql } = require("@prisma/adapter-libsql");
     const libsql = createClient({ url: tursoUrl, authToken: tursoToken });
     const adapter = new PrismaLibSql(libsql);
     return new PrismaClient({ adapter });
   }
 
-  // Desenvolvimento local: usar better-sqlite3
+  // Desenvolvimento local: usar better-sqlite3 (não disponível no Vercel)
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { PrismaBetterSqlite3 } = require("@prisma/adapter-better-sqlite3");
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const path = require("node:path");
   const dbPath = path.resolve(process.cwd(), "dev.db");
   const adapter = new PrismaBetterSqlite3({ url: `file:${dbPath}` });
