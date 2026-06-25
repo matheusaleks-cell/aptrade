@@ -17,8 +17,8 @@ export default function AdminLoginPage() {
     try {
       const formData = new FormData(e.currentTarget);
 
-      // Delay artificial de 1.2s para garantir a exibição da tela de carregamento estilo aplicativo
-      await new Promise((resolve) => setTimeout(resolve, 1200));
+      // Delay artificial para garantir a exibição da tela de carregamento estilo aplicativo
+      await new Promise((resolve) => setTimeout(resolve, 400));
 
       const result = await loginAdmin(formData);
       if (result?.error) {
